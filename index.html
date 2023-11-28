@@ -25,6 +25,11 @@
     <input type="button" id="volume-upRhythmbox" value="Volume UP">
     <input type="button" id="volume-downRhythmbox" value="Volume DOWN">
 
+    <div>
+        Set alarm: <input type="time"  id="alarmTime" value="05:35">
+        <input type="button" id="setAlarm" value="Set Alarm">
+    </div>
+
     <div id="feedback"></div>
 </body>
 
@@ -39,6 +44,10 @@
                 data = JSON.parse(this.responseText);
               
                 console.log(data);
+                if (data['item'] === "alarmOn" ) {
+                    console.log("ALARM ON");
+                    clearInterval(alarmCheck);
+                }
             }
         }
         let data = {};
@@ -54,6 +63,15 @@
         })
     }
 
+    function checkAlarm(){
+        sendRequest("/", "checkAlarm", `${alarmTime['hr']}:${alarmTime['min']}`)
+    }
+
+    alarmTime = {
+        hr: 5,
+        min: 35
+    };
+
     d=document;
     buttons = {};
 
@@ -65,6 +83,19 @@
 
     initRhythmboxButton("volume-up");
     initRhythmboxButton("volume-down");
+
+    timeInput = d.getElementById("alarmTime");
+    setAlarmButton = d.getElementById("setAlarm");
+    setAlarmButton.addEventListener("click", function(){
+        
+        console.log(timeInput.value);
+        let t = timeInput.value.split(":");
+        alarmTime["hr"] = parseInt(t[0]);
+        alarmTime["min"] = parseInt(t[1]);
+        console.log(alarmTime);
+        sendRequest("/", "setAlarm", timeInput.value);
+        alarmCheck = setInterval(checkAlarm, 5000);
+    })
 
 
 </script>
