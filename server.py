@@ -3,23 +3,13 @@ import cgi
 import json
 import subprocess
 
-def playRhythmbox():
-    cmd = 'rhythmbox-client --play'
+
+def rhythmboxCommand(opt):
+    cmd = f'rhythmbox-client --{opt}'
     subprocess.Popen(cmd, shell = True)
     print(cmd)
     return
 
-def nextRhythmbox():
-    cmd = 'rhythmbox-client --next'
-    subprocess.Popen(cmd, shell = True)
-    print(cmd)
-    return
-
-def pauseRhythmbox():
-    cmd = 'rhythmbox-client --pause'
-    subprocess.Popen(cmd, shell = True)
-    print(cmd)
-    return
 
 def postDataToArray(postData):
     raw_text = postData.decode("utf8")
@@ -27,7 +17,7 @@ def postDataToArray(postData):
     data = json.loads(raw_text)
     return data
 
-class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+class uHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _set_headers(self):
         self.send_response(200)
@@ -60,11 +50,18 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         rData['status'] = "start"
         self.wfile.write(bytes(json.dumps(rData), 'utf-8'))
 
-        if data["action"] == "Rhythmbox":
-            if data['value'] == "start":
-                playRhythmbox()
-            if data['value'] == 'pause':
-                pauseRhythmbox()
+        rhythmboxOptions = ["play", 
+                            "pause", 
+                            "play-pause",
+                            "next", 
+                            "previous", 
+                            "volume-up", 
+                            "volume-down"]
 
-httpd = HTTPServer(('', 8000), SimpleHTTPRequestHandler)
+        if data['action'] == "Rhythmbox":
+            if data['value'] in rhythmboxOptions:
+                rhythmboxCommand(data['value'])
+            
+
+httpd = HTTPServer(('', 8000), uHTTPRequestHandler)
 httpd.serve_forever()

@@ -14,8 +14,16 @@
 <body>
     <h1>Alarm Clock</h1>
 
-    <input type="button" id="startRhythmbox" value="Start Rhythmbox">
-    <input type="button" id="pauseRhythmbox" value="Pause Rhythmbox">
+    <!-- <input type="button" id="playRhythmbox" value="Play Rhythmbox">
+    <input type="button" id="pauseRhythmbox" value="Pause Rhythmbox"> -->
+    <input type="button" id="play-pauseRhythmbox" value="Toggle (play/pause)">
+    
+    <br>
+    <input type="button" id="previousRhythmbox" value="Previous Song">
+    <input type="button" id="nextRhythmbox" value="Next Song">
+    <br>
+    <input type="button" id="volume-upRhythmbox" value="Volume UP">
+    <input type="button" id="volume-downRhythmbox" value="Volume DOWN">
 
     <div id="feedback"></div>
 </body>
@@ -39,17 +47,24 @@
         xR.open("POST", target, true);
         xR.send(JSON.stringify(data));
     }
+    function initRhythmboxButton(opt){
+        buttons[opt] = d.getElementById(`${opt}Rhythmbox`);
+        buttons[opt].addEventListener("click", function(){
+            sendRequest("/", "Rhythmbox", opt);
+        })
+    }
+
     d=document;
+    buttons = {};
 
-    startButton = d.getElementById("startRhythmbox");
-    startButton.addEventListener("click", function(){
-        sendRequest("/", "Rhythmbox", "start");
-    })
+    // initRhythmboxButton("play");
+    // initRhythmboxButton("pause");
+    initRhythmboxButton("play-pause");
+    initRhythmboxButton("previous");
+    initRhythmboxButton("next");
 
-    pauseButton = d.getElementById("pauseRhythmbox");
-    pauseButton.addEventListener("click", function(){
-        sendRequest("/", "Rhythmbox", "pause");
-    })
+    initRhythmboxButton("volume-up");
+    initRhythmboxButton("volume-down");
 
 
 </script>
