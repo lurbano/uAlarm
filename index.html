@@ -6,8 +6,9 @@
     <title>uAlarm</title>
     <style>
         input[type=button] {
-            width: 25%;
+            width: 33%;
             height: 5em;
+            margin: 0.5em;
         }
     </style>
 </head>
@@ -28,7 +29,9 @@
     <div>
         Set alarm: <input type="time"  id="alarmTime" value="05:35">
         <input type="button" id="setAlarm" value="Set Alarm">
+        <input type="button" id="cancelAlarm" value="Cancel Alarm">
     </div>
+    <input type="button" id="sayTime" value="Say Time">
 
     <div id="feedback"></div>
 </body>
@@ -95,6 +98,21 @@
         console.log(alarmTime);
         sendRequest("/", "setAlarm", timeInput.value);
         alarmCheck = setInterval(checkAlarm, 5000);
+    })
+
+    cancelAlarmButton = d.getElementById("cancelAlarm");
+    cancelAlarmButton.addEventListener("click", function(){
+        l_conf = confirm("Confirm cancelling alarm.")
+        if (l_conf){
+            console.log(timeInput.value);
+            clearInterval(alarmCheck);
+        }
+        
+    })
+
+    sayTimeButton = d.getElementById("sayTime");
+    sayTimeButton.addEventListener("click", function(){
+        sendRequest("/", "sayTime");
     })
 
 

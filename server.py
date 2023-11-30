@@ -32,6 +32,13 @@ class aTime:
         return f'{self.hr}:{self.min}'
 
 
+def sayTime():
+    now = time.localtime()
+    toSay = f'It is now {now.tm_hour} {now.tm_min}.'
+    subprocess.Popen(f'echo {toSay} | festival --tts', shell=True)
+    time.sleep(4)
+
+
 class uHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _set_headers(self):
@@ -97,6 +104,9 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 rData['item'] = "alarmOff"
                 rData['status'] = "OFF"
+
+        if data['action'] == "sayTime":
+            sayTime()
 
         self.wfile.write(bytes(json.dumps(rData), 'utf-8'))
 
