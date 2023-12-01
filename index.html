@@ -10,6 +10,14 @@
             height: 5em;
             margin: 0.5em;
         }
+        #song-info {
+            width: 33%;
+            height: 5em;
+            margin: 0.5em;
+            background-color: bisque;
+            border: 1px solid black;
+            padding: 1em;
+        }
     </style>
 </head>
 <body>
@@ -18,7 +26,7 @@
     <!-- <input type="button" id="playRhythmbox" value="Play Rhythmbox">
     <input type="button" id="pauseRhythmbox" value="Pause Rhythmbox"> -->
     <input type="button" id="play-pauseRhythmbox" value="Toggle (play/pause)">
-    
+    <span id="song-info"></span>
     <br>
     <input type="button" id="previousRhythmbox" value="Previous Song">
     <input type="button" id="nextRhythmbox" value="Next Song">
@@ -51,6 +59,9 @@
                     console.log("ALARM ON");
                     clearInterval(alarmCheck);
                 }
+                if (data['item'] === "Rhythmbox"){
+                    songSpan.innerHTML = data['status'];
+                }
             }
         }
         let data = {};
@@ -59,7 +70,7 @@
         xR.open("POST", target, true);
         xR.send(JSON.stringify(data));
     }
-    function initRhythmboxButton(opt){
+    function setRhythmboxButton(opt){
         buttons[opt] = d.getElementById(`${opt}Rhythmbox`);
         buttons[opt].addEventListener("click", function(){
             sendRequest("/", "Rhythmbox", opt);
@@ -70,6 +81,10 @@
         sendRequest("/", "checkAlarm", `${alarmTime['hr']}:${alarmTime['min']}`)
     }
 
+    function getSongInfo(){
+        sendRequest("/", "songInfo");
+    }
+
     alarmTime = {
         hr: 5,
         min: 35
@@ -78,14 +93,16 @@
     d=document;
     buttons = {};
 
-    // initRhythmboxButton("play");
-    // initRhythmboxButton("pause");
-    initRhythmboxButton("play-pause");
-    initRhythmboxButton("previous");
-    initRhythmboxButton("next");
+    // setRhythmboxButton("play");
+    // setRhythmboxButton("pause");
+    setRhythmboxButton("play-pause");
+    setRhythmboxButton("previous");
+    setRhythmboxButton("next");
 
-    initRhythmboxButton("volume-up");
-    initRhythmboxButton("volume-down");
+    setRhythmboxButton("volume-up");
+    setRhythmboxButton("volume-down");
+
+    songSpan = d.getElementById("song-info");
 
     timeInput = d.getElementById("alarmTime");
     setAlarmButton = d.getElementById("setAlarm");
@@ -115,6 +132,10 @@
         sendRequest("/", "sayTime");
     })
 
+    window.addEventListener("load", (event) => {
+        console.log("page is fully loaded");
+        getSongInfo();
+    });
 
 </script>
 </html>

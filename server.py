@@ -7,14 +7,24 @@ import time
 
 def rhythmboxCommand(opt):
     cmd = f'rhythmbox-client --{opt}'
-    subprocess.Popen(cmd, shell = True)
+    subprocess.run(cmd, shell = True)
     print(cmd)
     return
+
+def getSongInfo():
+    cmd = f'rhythmbox-client --print-playing'
+    result = subprocess.run(cmd, shell = True, 
+                            capture_output=True, text=True)
+    print(cmd)
+    print(result.stdout)
+    song = result.stdout.split(" - ", maxsplit=1)
+    print(song)
+    return song[1]
 
 def setVolume(vol=1.0):
     ''' 0.0 < vol < 1.0 '''
     cmd = f'rhythmbox-client --set-volume {vol}'
-    subprocess.Popen(cmd, shell = True)
+    subprocess.run(cmd, shell = True)
     print(cmd)
     return
 
@@ -84,6 +94,7 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
         if data['action'] == "Rhythmbox":
             if data['value'] in rhythmboxOptions:
                 rhythmboxCommand(data['value'])
+                rData['status'] = getSongInfo()
             
         if data['action'] == "setAlarm":
             alarmTime = aTime(data['value'])
