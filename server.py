@@ -119,6 +119,9 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
         if data['action'] == "sayTime":
             sayTime()
 
+        if data['action'] == "songInfo":
+            rData['status'] = getSongInfo()
+
         self.wfile.write(bytes(json.dumps(rData), 'utf-8'))
 
 

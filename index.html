@@ -26,7 +26,8 @@
     <!-- <input type="button" id="playRhythmbox" value="Play Rhythmbox">
     <input type="button" id="pauseRhythmbox" value="Pause Rhythmbox"> -->
     <input type="button" id="play-pauseRhythmbox" value="Toggle (play/pause)">
-    <span id="song-info"></span>
+    <!-- <span id="song-info"></span> -->
+    <input type="button" id="song-info" value="Song Info.">
     <br>
     <input type="button" id="previousRhythmbox" value="Previous Song">
     <input type="button" id="nextRhythmbox" value="Next Song">
@@ -60,7 +61,7 @@
                     clearInterval(alarmCheck);
                 }
                 if (data['item'] === "Rhythmbox"){
-                    songSpan.innerHTML = data['status'];
+                    songInfoButton.value = data['status'];
                 }
             }
         }
@@ -102,7 +103,10 @@
     setRhythmboxButton("volume-up");
     setRhythmboxButton("volume-down");
 
-    songSpan = d.getElementById("song-info");
+    songInfoButton = d.getElementById("song-info");
+    songInfoButton.addEventListener("click", (event) => {
+        getSongInfo();
+    });
 
     timeInput = d.getElementById("alarmTime");
     setAlarmButton = d.getElementById("setAlarm");
@@ -131,6 +135,8 @@
     sayTimeButton.addEventListener("click", function(){
         sendRequest("/", "sayTime");
     })
+
+
 
     window.addEventListener("load", (event) => {
         console.log("page is fully loaded");
