@@ -18,6 +18,15 @@
             border: 1px solid black;
             padding: 1em;
         }
+        .section {
+            border: 1px solid green;
+            border-radius: 5px;
+            background-color: lemonchiffon;
+            
+        }
+        #speakers {
+            height: 3em;
+        }
     </style>
 </head>
 <body>
@@ -35,12 +44,25 @@
     <input type="button" id="volume-upRhythmbox" value="Volume UP">
     <input type="button" id="volume-downRhythmbox" value="Volume DOWN">
 
-    <div>
+    <div class="section">
         Set alarm: <input type="time"  id="alarmTime" value="05:35">
         <input type="button" id="setAlarm" value="Set Alarm">
         <input type="button" id="cancelAlarm" value="Cancel Alarm">
     </div>
     <input type="button" id="sayTime" value="Say Time">
+
+    <div class="section">
+        Speakers:<br>
+        <!-- <input type="button" id="BedroomSpeaker" 
+               class="speaker" value="Bedroom Speaker">
+        <input type="button" id="BlueJBL" 
+               class="speaker" value="Blue JBL">
+        <br> -->
+        <select id="speakers">
+            <option value="BedroomSpeaker">Bedroom Speaker</option>
+            <option value="BlueJBL"> Blue JBL</option>
+        </select>
+    </div>
 
     <div id="feedback"></div>
 </body>
@@ -136,11 +158,25 @@
         sendRequest("/", "sayTime");
     })
 
-
+    
 
     window.addEventListener("load", (event) => {
         console.log("page is fully loaded");
         getSongInfo();
+
+        speakerSelect = d.getElementById("speakers");
+        speakerSelect.addEventListener("change", function(){
+            console.log(this.value);
+            sendRequest("/", "chooseSpeaker", this.value);
+        })
+        // const speakerButtons = d.querySelectorAll(".speaker");
+        // console.log("speakers:", speakerButtons);
+        // speakerButtons.forEach(button => {
+        //     button.addEventListener('click', function(){
+        //         console.log("speaker: ", this.value);
+        //     })
+        // })
+
     });
 
 </script>

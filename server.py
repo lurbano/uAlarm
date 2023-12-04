@@ -28,6 +28,28 @@ def setVolume(vol=1.0):
     print(cmd)
     return
 
+def connectToBluetooth(addr):
+    cmd = f'bluetoothctl disconnect {addr}'
+    subprocess.run(cmd, shell = True)
+    cmd = f'bluetoothctl connect {addr}'
+    subprocess.run(cmd, shell = True)
+
+def selectBluetoothSpeaker(speaker="BedroomSpeaker"):
+    ''' 0.0 < vol < 1.0 '''
+    cmd = f'bluetoothctl devices'
+    result = subprocess.run(cmd, shell = True, 
+                            capture_output=True, text=True)
+    # print (result)
+    devices = result.stdout.split("\n")
+    for device in devices[:-1]:
+        info = device.split(" ")
+        print(info)
+        if info[2] == speaker:
+            addr = info[1]
+            print(speaker, " found at ", addr)
+            connectToBluetooth(addr)
+    return
+
 def postDataToArray(postData):
     raw_text = postData.decode("utf8")
     print("Raw")
@@ -121,6 +143,11 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
 
         if data['action'] == "songInfo":
             rData['status'] = getSongInfo()
+
+        if data['action'] == "chooseSpeaker":
+            selectBluetoothSpeaker(data['value'])
+            rData['item'] = "speaker"
+            rData['status'] = data['value']
 
         self.wfile.write(bytes(json.dumps(rData), 'utf-8'))
 
