@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>uAlarm</title>
     <style>
-        input[type=button] {
+        .bigButton {
             width: 33%;
             height: 5em;
             margin: 0.5em;
@@ -22,6 +22,7 @@
             border: 1px solid green;
             border-radius: 5px;
             background-color: lemonchiffon;
+            margin:3px;
             
         }
         #speakers {
@@ -34,22 +35,29 @@
 
     <!-- <input type="button" id="playRhythmbox" value="Play Rhythmbox">
     <input type="button" id="pauseRhythmbox" value="Pause Rhythmbox"> -->
-    <input type="button" id="play-pauseRhythmbox" value="Toggle (play/pause)">
+    <input type="button" id="play-pauseRhythmbox" value="Toggle (play/pause)" class="bigButton">
     <!-- <span id="song-info"></span> -->
-    <input type="button" id="song-info" value="Song Info.">
+    <input type="button" id="song-info" value="Song Info." class="bigButton">
     <br>
-    <input type="button" id="previousRhythmbox" value="Previous Song">
-    <input type="button" id="nextRhythmbox" value="Next Song">
+    <input type="button" id="previousRhythmbox" value="Previous Song" class="bigButton">
+    <input type="button" id="nextRhythmbox" value="Next Song" class="bigButton">
     <br>
-    <input type="button" id="volume-upRhythmbox" value="Volume UP">
-    <input type="button" id="volume-downRhythmbox" value="Volume DOWN">
+    <input type="button" id="volume-upRhythmbox" value="Volume UP" class="bigButton">
+    <input type="button" id="volume-downRhythmbox" value="Volume DOWN" class="bigButton">
 
     <div class="section">
-        Set alarm: <input type="time"  id="alarmTime" value="05:35">
-        <input type="button" id="setAlarm" value="Set Alarm">
-        <input type="button" id="cancelAlarm" value="Cancel Alarm">
+        Pick Song:
+        <select id="artists"></select>
+        <select id="songs"></select>
+        <input type="button" id="playSong" value="Play">
+
     </div>
-    <input type="button" id="sayTime" value="Say Time">
+    <div class="section">
+        Set alarm: <input type="time"  id="alarmTime" value="05:35">
+        <input type="button" id="setAlarm" value="Set Alarm" class="bigButton">
+        <input type="button" id="cancelAlarm" value="Cancel Alarm" class="bigButton">
+    </div>
+    <input type="button" id="sayTime" value="Say Time" class="bigButton">
 
     <div class="section">
         Speakers:<br>
@@ -76,14 +84,41 @@
                 
                 console.log("Server Response:", this.responseText);
                 data = JSON.parse(this.responseText);
+                // server returns data['item'] and data['status']
               
                 console.log(data);
                 if (data['item'] === "alarmOn" ) {
                     console.log("ALARM ON");
                     clearInterval(alarmCheck);
                 }
-                if (data['item'] === "Rhythmbox"){
+                if (data['item'] === "songInfo"){
+                    //console.log(data['status']);
+                    songData = parseSongInfo(data['status']);
+                    //console.log("songData:", songData);
                     songInfoButton.value = data['status'];
+                    
+                }
+                if (data['item'] === "artists") {
+                    // console.log("artists:", data['status']);
+                    data['status'].forEach((artist) => {
+                        //console.log(artist);
+                        let artistOpt = d.createElement("option");
+                        artistOpt.text = artist;
+                        artistOpt.value = artist;
+                        artistsSelect.add(artistOpt);
+                    });
+                }
+                if (data.item === "songs"){
+                    console.log('data.status:', data.status);
+                    songsSelect.options.length = 0;
+                    data.status.forEach((song) => {
+                        songData = parseSongInfo(song);
+                        let songOpt = d.createElement('option');
+                        songOpt.text = songData.song;
+                        songOpt.value = song;
+                        songsSelect.add(songOpt);
+                    });
+                    console.log(songData);
                 }
             }
         }
@@ -107,11 +142,32 @@
     function getSongInfo(){
         sendRequest("/", "songInfo");
     }
+    function parseSongInfo(data){
+        songData.full = data;
+        data = data.split(" - ");
+        if (data.length === 2){
+            songData.artist = data[0].trim();
+            songData.song = data[1].trim();
+        } else if (data.length === 1) {
+            songData.artist = "";
+            songData.song = data[0].trim();
+        }
+        let lngth = songData.song.length - 4;
+        console.log("lngth", lngth);
+        songData['song'] = songData['song'].slice(0,lngth);
+        return songData;
+    }
 
     alarmTime = {
         hr: 5,
         min: 35
     };
+
+    songData = {
+        full: "",
+        artist: "",
+        song: ""
+    }
 
     d=document;
     buttons = {};
@@ -125,10 +181,7 @@
     setRhythmboxButton("volume-up");
     setRhythmboxButton("volume-down");
 
-    songInfoButton = d.getElementById("song-info");
-    songInfoButton.addEventListener("click", (event) => {
-        getSongInfo();
-    });
+    
 
     timeInput = d.getElementById("alarmTime");
     setAlarmButton = d.getElementById("setAlarm");
@@ -164,6 +217,11 @@
         console.log("page is fully loaded");
         getSongInfo();
 
+        songInfoButton = d.getElementById("song-info");
+        songInfoButton.addEventListener("click", (event) => {
+            getSongInfo();
+        });
+
         speakerSelect = d.getElementById("speakers");
         speakerSelect.addEventListener("change", function(){
             console.log(this.value);
@@ -176,6 +234,22 @@
         //         console.log("speaker: ", this.value);
         //     })
         // })
+
+        //pick song
+        artistsSelect = d.getElementById("artists")
+        artistsSelect.addEventListener("change", function(){
+            sendRequest("/", "getSongList", this.value);
+        })
+        songsSelect = d.getElementById("songs");
+        sendRequest("/", "getArtistList");
+
+        playSongButton = d.getElementById("playSong");
+        playSongButton.addEventListener("click", function(){
+            let dirName = artistsSelect.value;
+            let fileName = songsSelect.value;
+            console.log(`${dirName}/${fileName}`);
+            sendRequest("/", "playSong", `${dirName}/${fileName}`);
+        })
 
     });
 

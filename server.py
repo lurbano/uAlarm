@@ -1,9 +1,11 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import cgi
+import os
 import json
 import subprocess
 import time
+from urllib.parse import quote
 
+fileURI = 'file:///home/lurbano/Music/'
 
 def rhythmboxCommand(opt):
     cmd = f'rhythmbox-client --{opt}'
@@ -11,7 +13,18 @@ def rhythmboxCommand(opt):
     print(cmd)
     return
 
+def playSong(fileName):
+    fileName = quote(fileName)
+    cmd = f'rhythmbox-client --enqueue {fileURI}{fileName}'
+    subprocess.run(cmd, shell = True)
+    print("playSong:", cmd)
+    rhythmboxCommand("next")
+    return
+
+
+
 def getSongInfo():
+    '''from rhythmbox'''
     cmd = f'rhythmbox-client --print-playing'
     result = subprocess.run(cmd, shell = True, 
                             capture_output=True, text=True)
@@ -27,6 +40,19 @@ def setVolume(vol=1.0):
     subprocess.run(cmd, shell = True)
     print(cmd)
     return
+
+def getAllArtists():
+    path = "/home/lurbano/Music/"
+    dir_list = os.listdir(path)
+    return sorted(dir_list, key=str.lower)
+
+def getAllSongs(artist=None):
+    if artist == None:
+        return None
+    else:
+        path = f"/home/lurbano/Music/{artist}"
+        dir_list = os.listdir(path)
+        return sorted(dir_list, key=str.lower)
 
 def connectToBluetooth(addr):
     cmd = f'bluetoothctl disconnect {addr}'
@@ -70,6 +96,10 @@ def sayTime():
     subprocess.Popen(f'echo {toSay} | festival --tts', shell=True)
     time.sleep(4)
 
+def sayText(toSay):
+    subprocess.Popen(f'echo {toSay} | festival --tts', shell=True)
+    time.sleep(4)
+
 
 class uHTTPRequestHandler(BaseHTTPRequestHandler):
 
@@ -99,11 +129,16 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
         data = postDataToArray(post_data)
+        '''
+        data consists of 
+            data['action'] and 
+            data['value']
+        '''
         self._set_headers()
         print(data)
         rData = {}
-        rData['item'] = "Rhythmbox"
-        rData['status'] = "start"
+        rData['item'] = ""
+        rData['status'] = ""
         
         rhythmboxOptions = ["play", 
                             "pause", 
@@ -116,6 +151,7 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
         if data['action'] == "Rhythmbox":
             if data['value'] in rhythmboxOptions:
                 rhythmboxCommand(data['value'])
+                rData['item'] = 'Rhythmbox'
                 rData['status'] = getSongInfo()
             
         if data['action'] == "setAlarm":
@@ -124,6 +160,7 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
             now = time.localtime()
             print(f"Now:{now.tm_hour}:{now.tm_min}")
             print("Alarm time: ", alarmTime)
+            sayText(f'Alarm set for {alarmTime}')
         
         if data['action'] == "checkAlarm":
             now = time.localtime()
@@ -142,11 +179,28 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
             sayTime()
 
         if data['action'] == "songInfo":
+            rData['item'] = 'songInfo'
             rData['status'] = getSongInfo()
 
         if data['action'] == "chooseSpeaker":
             selectBluetoothSpeaker(data['value'])
             rData['item'] = "speaker"
+            rData['status'] = data['value']
+
+        if data['action'] == 'getArtistList':
+            dir_list = getAllArtists()
+            rData['item'] = "artists"
+            rData['status'] = dir_list
+            print("Got artist list")
+            print(rData)
+
+        if data['action'] == 'getSongList':
+            rData['item'] = "songs"
+            rData['status'] = getAllSongs(data['value'])
+
+        if data['action'] == 'playSong':
+            playSong(data['value'])
+            rData['item'] = "playSong"
             rData['status'] = data['value']
 
         self.wfile.write(bytes(json.dumps(rData), 'utf-8'))
