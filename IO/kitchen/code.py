@@ -161,13 +161,13 @@ while True:
                     #ledPix.brighness = brightKnob.getPercent()/100
                     #print(brightKnob.getPercent()/100)
                     ledPix.brightness = brightKnob.getPercent()/100
-                    print("brightness", brightKnob.getPercent(), ledPix.brightness)
+                    #print("brightness", brightKnob.getPercent(), ledPix.brightness)
                     ledPix.pixels[i] = ledPix.wheel(pixel_index & 255, 0.5) 
 
                 ledPix.pixels.show()
                 server.poll()
                 if ledMode == "rainbow":
-                    time.sleep(0.1)
+                    time.sleep(0.01)
                     # check brightness dial
                     ledPix.brighness = brightKnob.getPercent()/100
                     
