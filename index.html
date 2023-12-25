@@ -42,11 +42,14 @@
     <input type="button" id="previousRhythmbox" value="Previous Song" class="bigButton">
     <input type="button" id="nextRhythmbox" value="Next Song" class="bigButton">
     <br>
-    <input type="button" id="volume-upRhythmbox" value="Volume UP" class="bigButton">
-    <input type="button" id="volume-downRhythmbox" value="Volume DOWN" class="bigButton">
-
+    <!-- <input type="button" id="volume-upRhythmbox" value="Volume UP" class="bigButton">
+    <input type="button" id="volume-downRhythmbox" value="Volume DOWN" class="bigButton"> -->
+    <input type="button" id="volumeDown" value="Volume DOWN" class="bigButton">
+    <span id="volumeData">Volume</span>
+    <input type="button" id="volumeUp" value="Volume UP" class="bigButton">
     <div class="section">
         Pick Song:
+        <input type="button" id="currentSong" value="Current">
         <select id="artists"></select>
         <select id="songs"></select>
         <input type="button" id="playSong" value="Play">
@@ -91,7 +94,10 @@
                     console.log("ALARM ON");
                     clearInterval(alarmCheck);
                 }
-                if (data['item'] === "songInfo"){
+                if (data['item'] === "songInfo" ||
+                    data['item'] === "Rhythmbox-next" ||
+                    data['item'] === "Rhythmbox-previous"
+                    ){
                     //console.log(data['status']);
                     songData = parseSongInfo(data['status']);
                     //console.log("songData:", songData);
@@ -119,6 +125,9 @@
                         songsSelect.add(songOpt);
                     });
                     console.log(songData);
+                }
+                if (data.item === "Volume"){
+                    volumeData.innerHTML =  `${data.status}%`;
                 }
             }
         }
@@ -178,8 +187,8 @@
     setRhythmboxButton("previous");
     setRhythmboxButton("next");
 
-    setRhythmboxButton("volume-up");
-    setRhythmboxButton("volume-down");
+    // setRhythmboxButton("volume-up");
+    // setRhythmboxButton("volume-down");
 
     
 
@@ -215,6 +224,9 @@
 
     window.addEventListener("load", (event) => {
         console.log("page is fully loaded");
+        //get volume
+        sendRequest("/", "getVolume");
+
         getSongInfo();
 
         songInfoButton = d.getElementById("song-info");
@@ -249,6 +261,24 @@
             let fileName = songsSelect.value;
             console.log(`${dirName}/${fileName}`);
             sendRequest("/", "playSong", `${dirName}/${fileName}`);
+        })
+
+        currentSongButton = d.getElementById("currentSong");
+        currentSongButton.addEventListener("click", function(){
+            artistsSelect.value = songData.artist;
+        })
+
+        // getVolume.addEventListener("click", function(){
+        //     console.log("Get Volume");
+        //     sendRequest("/", "getVolume");
+        // })
+        volumeUp.addEventListener("click", function(){
+            console.log("Volume Up");
+            sendRequest("/", "dVolume", "+");
+        })
+        volumeDown.addEventListener("click", function(){
+            console.log("Volume Down");
+            sendRequest("/", "dVolume", "-");
         })
 
     });

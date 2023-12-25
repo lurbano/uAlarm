@@ -4,8 +4,10 @@ import json
 import subprocess
 import time
 from urllib.parse import quote
+from pactlAudio import *
 
 fileURI = 'file:///home/lurbano/Music/'
+audioCtrl = pactlAudio()
 
 def rhythmboxCommand(opt):
     cmd = f'rhythmbox-client --{opt}'
@@ -101,6 +103,8 @@ def sayText(toSay):
     time.sleep(4)
 
 
+    
+
 class uHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _set_headers(self):
@@ -151,7 +155,7 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
         if data['action'] == "Rhythmbox":
             if data['value'] in rhythmboxOptions:
                 rhythmboxCommand(data['value'])
-                rData['item'] = 'Rhythmbox'
+                rData['item'] = f'Rhythmbox-{data["value"]}'
                 rData['status'] = getSongInfo()
             
         if data['action'] == "setAlarm":
@@ -202,6 +206,21 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
             playSong(data['value'])
             rData['item'] = "playSong"
             rData['status'] = data['value']
+
+        if data['action'] == 'getVolume':
+            vol = audioCtrl.getVolume()
+            rData['item'] = "Volume"
+            rData['status'] = vol
+        
+        if data['action'] == 'dVolume':
+            vol = audioCtrl.getVolume()
+            if data['value'] == "+":
+                vol += 5
+            elif data['value'] == "-":
+                vol -= 5
+            audioCtrl.setVolume(vol)
+            rData['item'] = "Volume"
+            rData['status'] = vol
 
         self.wfile.write(bytes(json.dumps(rData), 'utf-8'))
 
