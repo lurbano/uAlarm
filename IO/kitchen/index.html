@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PicoW Test Server</title>
+</head>
+<body>
+    Pico W here.
+    
+    <div id="data">Hi</div>
+
+    <input type="button" id="led" value="LED">
+
+        <label for="ledModes">Mode:</label>
+
+    <select name="ledModes" id="ledModes">
+      <option value="rainbow">Rainbow</option>
+      <option value="checkerboard">Checkerboard</option>
+    </select>
+    
+    
+    <div id="responseArea"></div>
+
+    
+</body>
+<script>
+    d = document;
+    
+    responseArea = d.getElementById("responseArea");
+
+    ledStatus = "OFF";
+    ledButton = d.getElementById("led");
+    ledButton.addEventListener("click", makeRequest);
+
+    function makeRequest() {
+        console.log("making request")
+        let xR = new XMLHttpRequest();
+        xR.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                
+                console.log("Server Response:", this.responseText);
+                data = JSON.parse(this.responseText);
+                ledButton.value = data['status'] ? "ON" : "OFF";
+            }
+        }
+        let data = {};
+        ledStatus = ledStatus === "OFF" ? "ON" : "OFF";
+        data["action"] = ledStatus;
+        xR.open("POST", "led", true);
+        xR.send(JSON.stringify(data));
+    }
+    
+    function sendRequest(target, action, value="") {
+        console.log("making request")
+        let xR = new XMLHttpRequest();
+        xR.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                
+                console.log("Server Response:", this.responseText);
+                data = JSON.parse(this.responseText);
+                console.log(data);
+                // responseArea.innerText = data['status'];
+            }
+        }
+        let data = {};
+        data["action"] = action;
+        data["value"] = value;
+        console.log("data:", data);
+        xR.open("POST", target, true);
+        xR.send(JSON.stringify(data));
+    }
+
+    
+    
+    function addColorPicker(modeURL, n, optsElement){ 
+        t = d.createTextNode(`Color ${n}:`);
+        optsElement.appendChild(t);
+        let cp = d.createElement("INPUT");
+        cp.setAttribute("type", "color");
+        cp.setAttribute("id", `checkColor_${n}`);
+        cp.setAttribute("class", "checkColors");
+        optsElement.appendChild(cp);
+        cp.addEventListener("change", () => sendRequest(modeURL, `${n}`, cp.value));
+    }
+    
+    modeSelection = d.getElementById("ledModes");
+    modeSelection.addEventListener("change", setMode);
+    
+    function setMode(){
+        console.log(modeSelection.value);
+        modeOpts = d.getElementById("modeOptions");
+        modeOpts.innerHTML = "Settings<br>";
+        
+        if (modeSelection.value === "checkerboard"){
+            addColorPicker(modeSelection.value, 1, modeOpts);
+            addColorPicker(modeSelection.value, 2, modeOpts); 
+        }
+        
+        
+        sendRequest("/setMode", "setMode", modeSelection.value);
+        
+    }
+
+</script>
+</html>
+
