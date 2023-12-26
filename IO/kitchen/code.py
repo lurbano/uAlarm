@@ -174,14 +174,26 @@ while True:
                     
                     if touchCheck():
                         ledMode = "solid"
+
             elif ledMode == "solid":
-                # checkerboard
+                # solid color
                 server.poll()
                 ledPix.setColor(modeColors['solidColor'])
                 
                 if touchCheck():
-                        ledMode = "rainbow"
+                        ledMode = "red"
 
+            elif ledMode == "red":
+                ledPix.setColor((255,0,0))
+
+                if touchCheck():
+                        ledMode = "white"
+
+            elif ledMode == "white":
+                ledPix.setColor((255,255,255))
+
+                if touchCheck():
+                        ledMode = "rainbow"
             
             else:
                 ledPix.off()
