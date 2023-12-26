@@ -16,10 +16,10 @@
 
     <select name="ledModes" id="ledModes">
       <option value="rainbow">Rainbow</option>
-      <option value="checkerboard">Checkerboard</option>
+      <option value="solid">Solid Color</option>
     </select>
     
-    
+    <div id="modeOptions"></div>
     <div id="responseArea"></div>
 
     
@@ -73,15 +73,18 @@
 
     
     
-    function addColorPicker(modeURL, n, optsElement){ 
-        t = d.createTextNode(`Color ${n}:`);
+    function addColorPicker2(mode, id, optsElement){ 
+        t = d.createTextNode(`Color ${id}:`);
         optsElement.appendChild(t);
         let cp = d.createElement("INPUT");
         cp.setAttribute("type", "color");
-        cp.setAttribute("id", `checkColor_${n}`);
+        cp.setAttribute("id", `checkColor_${id}`);
         cp.setAttribute("class", "checkColors");
         optsElement.appendChild(cp);
-        cp.addEventListener("change", () => sendRequest(modeURL, `${n}`, cp.value));
+         cp.addEventListener("change", 
+            () => sendRequest('/', 
+                              "setColor", 
+                            { "mode": mode, "id": id, "value": cp.value }));
     }
     
     modeSelection = d.getElementById("ledModes");
@@ -92,13 +95,12 @@
         modeOpts = d.getElementById("modeOptions");
         modeOpts.innerHTML = "Settings<br>";
         
-        if (modeSelection.value === "checkerboard"){
-            addColorPicker(modeSelection.value, 1, modeOpts);
-            addColorPicker(modeSelection.value, 2, modeOpts); 
+        if (modeSelection.value === "solid"){
+            addColorPicker2(modeSelection.value, "solidColor", modeOpts);
         }
         
         
-        sendRequest("/setMode", "setMode", modeSelection.value);
+        sendRequest("/", "setMode", modeSelection.value);
         
     }
 

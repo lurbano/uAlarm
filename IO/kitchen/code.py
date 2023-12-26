@@ -20,7 +20,7 @@ from uKnob import uKnob
 
 
 ledMode = "rainbow"
-ledPix = ledPixels(30, board.GP22)
+ledPix = ledPixels(120, board.GP22)
 #ledPix.brightness = 50
 
 # touch sensor
@@ -30,7 +30,9 @@ print("Start touch", touch.value)
 # brightness Knob
 brightKnob = uKnob(board.A2)
 
-
+solidColor = (255, 255, 255)
+modeColors = {}
+modeColors["solidColor"] = solidColor
 
 with open("index.html") as f:
     webpage = f.read()
@@ -54,7 +56,7 @@ def requestToArray(request):
     data = json.loads(raw_text)
     return data
 
-@server.route("/")
+@server.route("/", "GET")
 def base(request: HTTPRequest):
     """
     Serve the default index.html file.
@@ -62,6 +64,44 @@ def base(request: HTTPRequest):
     with HTTPResponse(request, content_type=MIMEType.TYPE_HTML) as response:
         #response.send(f"{webpage()}")
         response.send(webpage)
+
+@server.route("/", "POST")
+def base(request: HTTPRequest):
+    """
+    Serve the default index.html file.
+    """
+    global ledMode
+    global modeColors
+    rData = {}
+        
+    print("POST")
+    data = requestToArray(request)
+    print(f"data: {data} ")
+    print(f"action: {data['action']} & value: {data['value']}")
+
+    # SET MODE
+    if (data['action'] == "setMode"):
+        
+        print("IN \setmode")
+        ledMode = data['value']
+        print("ledMode:", ledMode)
+            
+        rData['item'] = "mode"
+        rData['status'] = ledMode
+
+
+    # SPECIFY COLOR FROM COLOR PICKER
+    if (data['action'] == "setColor"):
+        vals = data['value']
+        modeColors[vals['id']] = vals['value']
+        rData['item'] = vals['id']
+        rData['status'] = vals['value']
+        
+    with HTTPResponse(request) as response:
+        response.send(json.dumps(rData))
+
+        
+
 
 
 led = DigitalInOut(board.LED)
@@ -88,52 +128,7 @@ def ledButton(request: HTTPRequest):
     with HTTPResponse(request) as response:
         response.send(json.dumps(rData))
  
-@server.route("/setMode", "POST")
-def setLedMode(request: HTTPRequest):
-    # raw_text = request.body.decode("utf8")
-    #print("Raw")
-    # data = json.loads(raw_text)
-    
-    global ledMode
-    
-    data = requestToArray(request)
-    print("IN \setmode")
-    print(f"data: {data} & action: {data['action']} & value: {data['value']}")
-    rData = {}
-    
-    ledMode = data['value']
         
-    print("ledMode:", ledMode)
-        
-    
-    rData['item'] = "mode"
-    rData['status'] = ledMode
-        
-    with HTTPResponse(request) as response:
-        response.send(json.dumps(rData))
-        
-
-@server.route("/checkerboard", "POST")
-def checkerboard(request: HTTPRequest):
-    # raw_text = request.body.decode("utf8")
-    #print("Raw")
-    # data = json.loads(raw_text)
-    
-    data = requestToArray(request)
-    print(f"data: {data} & action: {data['action']} & value: {data['value']}")
-    rData = {}
-    
-    if data['action'] == "1":
-        game.whiteColor = hex_to_rgb(data['value'])
-    elif data['action'] == '2':
-        game.blackColor = hex_to_rgb(data['value'])
-            
-    
-    rData['item'] = "checkerboard"
-    rData['status'] = f'checkColor{data["action"]}'
-        
-    with HTTPResponse(request) as response:
-        response.send(json.dumps(rData))
 
 def touchCheck():
     if touch.value:
@@ -149,44 +144,47 @@ server.start(str(wifi.radio.ipv4_address))
 
 while True:
     try:
-        # Do something useful in this section,
-        # for example read a sensor and capture an average,
-        # or a running total of the last 10 samples
-        if ledMode == "rainbow":
-            # rainbow
-            for j in range(255):
-                for i in range(ledPix.nPix):
-                    pixel_index = (i * 256 // ledPix.nPix) + j
-                    #ledPix.brightness = 0.1
-                    #ledPix.brighness = brightKnob.getPercent()/100
-                    #print(brightKnob.getPercent()/100)
-                    ledPix.brightness = brightKnob.getPercent()/100
-                    #print("brightness", brightKnob.getPercent(), ledPix.brightness)
-                    ledPix.pixels[i] = ledPix.wheel(pixel_index & 255, 0.5) 
+        '''
+            LEDs
+        '''
+        
+        brightness = brightKnob.getPercent()/100
+        if brightness < 0.02:
+            ledPix.off()
+        else:
+            ledPix.brightness = brightness
+                        
+            if ledMode == "rainbow":
+                # rainbow
+                for j in range(255):
+                    for i in range(ledPix.nPix):
+                        pixel_index = (i * 256 // ledPix.nPix) + j
+                        
+                        ledPix.pixels[i] = ledPix.wheel(pixel_index & 255, 0.5) 
 
-                ledPix.pixels.show()
-                server.poll()
-                if ledMode == "rainbow":
-                    time.sleep(0.01)
-                    # check brightness dial
-                    ledPix.brighness = brightKnob.getPercent()/100
+                    ledPix.pixels.show()
+                    server.poll()
+                    if ledMode == "rainbow":
+                        time.sleep(0.01)
+                        # check brightness dial
+                        ledPix.brighness = brightKnob.getPercent()/100
+                        
+                    else:
+                        break
                     
-                else:
-                    break
+                    if touchCheck():
+                        ledMode = "solid"
+            elif ledMode == "solid":
+                # checkerboard
+                server.poll()
+                ledPix.setColor(modeColors['solidColor'])
                 
                 if touchCheck():
-                    ledMode = "checkerboard"
-        elif ledMode == "checkerboard":
-            # checkerboard
-            server.poll()
-            ledPix.checkerBoard()
-            
-            if touchCheck():
-                    ledMode = "playThrough"
+                        ledMode = "rainbow"
 
-        
-        else:
-            ledPix.off()
+            
+            else:
+                ledPix.off()
 
         # Process any waiting requests
         server.poll()
