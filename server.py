@@ -5,6 +5,14 @@ import subprocess
 import time
 from urllib.parse import quote
 from pactlAudio import *
+import socket 
+
+port = 8000
+hostname=socket.gethostname()
+ipAddr = socket.gethostbyname(hostname)
+
+print(f"Serving from: http://{hostname}.local:{port}")
+print(f"at IP: http://{ipAddr}:{port}")
 
 fileURI = 'file:///home/lurbano/Music/'
 audioCtrl = pactlAudio()
@@ -229,7 +237,7 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
 alarmOn = False
 alarmTime = aTime("5:35")
 
-httpd = HTTPServer(('', 8000), uHTTPRequestHandler)
+httpd = HTTPServer(('', port), uHTTPRequestHandler)
 httpd.serve_forever()
 
 
