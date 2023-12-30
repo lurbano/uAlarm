@@ -20,6 +20,7 @@ from uKnob import uKnob
 
 
 ledMode = "rainbow"
+old_ledMode = ledMode
 ledPix = ledPixels(120, board.GP22)
 #ledPix.brightness = 50
 
@@ -34,6 +35,7 @@ l_lightsON = True
 solidColor = (255, 255, 255)
 modeColors = {}
 modeColors["solidColor"] = solidColor
+modeColors["white"] = '#f6d32d' 
 
 with open("index.html") as f:
     webpage = f.read()
@@ -72,6 +74,7 @@ def base(request: HTTPRequest):
     Serve the default index.html file.
     """
     global ledMode
+    global old_ledMode
     global modeColors
     rData = {}
         
@@ -81,10 +84,21 @@ def base(request: HTTPRequest):
     print(f"action: {data['action']} & value: {data['value']}")
 
     # SET MODE
+    if (data['action'] == "lightToggle"):
+        
+        if ledMode == "off":
+            ledMode = old_ledMode
+        else:
+            changeMode("off")
+            
+        rData['item'] = "mode"
+        rData['status'] = ledMode
+
+
     if (data['action'] == "setMode"):
         
         print("IN \setmode")
-        ledMode = data['value']
+        changeMode(data['value'])
         print("ledMode:", ledMode)
             
         rData['item'] = "mode"
@@ -129,7 +143,10 @@ def ledButton(request: HTTPRequest):
     with HTTPResponse(request) as response:
         response.send(json.dumps(rData))
  
-        
+def changeMode(newMode):
+    global old_ledMode, ledMode
+    old_ledMode = ledMode
+    ledMode = newMode
 
 def touchCheck():
     if touch.value:
@@ -184,31 +201,39 @@ while True:
                         break
                     
                     if touchCheck():
-                        ledMode = "solid"
+                        changeMode("red")
 
+            elif ledMode == "red":
+                ledPix.setColor((255,0,0))
+
+                if touchCheck():
+                        changeMode("solid")
+                        
             elif ledMode == "solid":
                 # solid color
                 server.poll()
                 ledPix.setColor(modeColors['solidColor'])
                 
                 if touchCheck():
-                        ledMode = "red"
+                        changeMode("white")
 
-            elif ledMode == "red":
-                ledPix.setColor((255,0,0))
-
-                if touchCheck():
-                        ledMode = "white"
 
             elif ledMode == "white":
-                ledPix.setColor((255,255,255))
-
+                ledPix.setColor(modeColors['white'])
+                
                 if touchCheck():
-                        ledMode = "rainbow"
+                        changeMode("off")
+                        
             
-            else:
+            elif ledMode == "off":
                 ledPix.off()
-
+                
+                if touchCheck():
+                        changeMode("rainbow")
+                        
+                        
+            else:
+                changeMode("off")
         # Process any waiting requests
         server.poll()
     except OSError as error:
