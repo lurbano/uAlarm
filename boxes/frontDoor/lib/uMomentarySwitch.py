@@ -19,13 +19,16 @@ class uMomentarySwitch:
     def getValue(self):
         return self.switch.value
     
-    def switchCheck(self):
+    def pressed(self):
         if self.switch.value:
             while self.switch.value:
                 time.sleep(0.01)
             return True
         else:
             return False
+        
+    def switchCheck(self):
+        return self.pressed()
 
 if __name__ == '__main__':
     pin = board.GP19

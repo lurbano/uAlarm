@@ -21,12 +21,19 @@ from ledPixelsPico import *
 from uKnob import uKnob
 from u3WaySwitch import u3WaySwitch
 from uMomentarySwitch import uMomentarySwitch
+from uNetComm import *
 
 
 ledMode = "rainbow"
-ledPix = ledPixels(20, board.GP2)
-#ledPix.brightness = 50
+old_ledMode = ledMode
+ledPix = ledPixels(144, board.GP2)
 
+modeSequence = ["rainbow", "red", "white", "solid", "off"]
+#ledPix.brightness = 50
+solidColor = (255, 255, 255)
+modeColors = {}
+modeColors["solidColor"] = solidColor
+modeColors["white"] = '#f6d32d' 
 # touch sensor
 #touch = touchio.TouchIn(board.GP16)
 #print("Start touch", touch.value)
@@ -40,15 +47,13 @@ betaKnob = uKnob(board.A2)
 
 # 3 way switches
 doorSwitch = u3WaySwitch(pin1 = board.GP3, pin2 = board.GP18)
-houseSwitch = u3WaySwitch(pin1 = board.GP11, pin2 = board.GP15)
+kSwitch = u3WaySwitch(pin1 = board.GP15, pin2 = board.GP11)
 
 # momentary switch
 doorButton = uMomentarySwitch(board.GP19)
 
 
-solidColor = (255, 255, 255)
-modeColors = {}
-modeColors["solidColor"] = solidColor
+
 
 with open("index.html") as f:
     webpage = f.read()
@@ -64,7 +69,9 @@ print("Connected to", ssid)
 
 pool = socketpool.SocketPool(wifi.radio)
 server = HTTPServer(pool)
-httpRequests = requests.Session(pool)
+#httpRequests = requests.Session(pool)
+comm = uNetComm(pool)
+
 
 def requestToArray(request):
     raw_text = request.body.decode("utf8")
@@ -144,6 +151,24 @@ def ledButton(request: HTTPRequest):
     with HTTPResponse(request) as response:
         response.send(json.dumps(rData))
  
+def changeMode(newMode):
+    global old_ledMode, ledMode
+    old_ledMode = ledMode
+    ledMode = newMode
+    
+def nextMode():
+    global old_ledMode, ledMode
+    print("Old mode:", ledMode)
+    nSeq = len(modeSequence)
+    for i in range(nSeq):
+        print(i, ledMode, modeSequence[i])
+        if ledMode == modeSequence[i]:
+            if i < nSeq-1:
+                changeMode(modeSequence[i+1])
+            else:
+                changeMode(modeSequence[0])
+            break
+    print("New mode", ledMode)
         
 
 def touchCheck():
@@ -154,14 +179,47 @@ def touchCheck():
     else:
         return False
     
-def setBrightness(knob, leds):
-    brightness = knob.getPercent()/100
+def setBrightness():
+    brightness = brightKnob.getPercent()/100
     if brightness < 0.02:
-        leds.off()
+        ledPix.off()
         l_lightsON = False
     else:
         l_lightsON = True
-        leds.brightness = brightness
+        ledPix.brightness = brightness
+        
+        
+def houseSwitchCheck():
+    if kSwitch.change():
+        print("kSwitch:", kSwitch.getState())
+        if kSwitch.state == 1:
+            comm.request("bedroomSpeaker", "Rhythmbox", "play")
+            comm.request("bedroomSpeaker", "setVolume", "100")
+            comm.request("kitchen", "setMode", "rainbow")
+        elif kSwitch.state == 0:
+            comm.request("bedroomSpeaker", "Rhythmbox", "pause")
+            comm.request("kitchen", "setMode", "red")
+            
+        elif kSwitch.state == 2:
+            comm.request("kitchen", "setMode", "off")
+            
+def doorSwitchCheck():
+    global ledMode, old_ledMode
+    if doorSwitch.change():
+        print("doorSwitch:", doorSwitch.state)
+        if doorSwitch.state == 1:
+            ledMode = old_ledMode
+        elif doorSwitch.state == 0:
+            ledMode = "off"
+        elif doorSwitch.state == 2:
+            ledMode = "red"
+        
+def doorButtonCheck():
+    global ledMode, old_ledMode
+    if doorButton.pressed():
+        nextMode()
+
+# 192.168.1.131
 
 print(f"Listening on http://{wifi.radio.ipv4_address}:80")
 # Start the server.
@@ -173,61 +231,65 @@ while True:
             LEDs
         '''
         #doorSwitchState = doorSwitch.getState()
-        if doorSwitch.getState() == 1:
-            #print("Led")
-            brightness = brightKnob.getPercent()/100
-            #print(brightness)
-            
+        setBrightness()
+        houseSwitchCheck()
+        doorSwitchCheck()
+        doorButtonCheck()
+        
+        
+        brightness = brightKnob.getPercent()/100
+        if brightness < 0.02:
+            ledPix.off()
+        else:
             ledPix.brightness = brightness
-            #print(ledMode, ledPix.brightness)
+                        
             if ledMode == "rainbow":
                 # rainbow
                 for j in range(255):
                     for i in range(ledPix.nPix):
-                        #setBrightness(brightKnob, ledPix)
-                        ledPix.brightness = brightKnob.getPercent()/100
-                        if doorSwitch.change():
-                            break
+                        setBrightness()
                         pixel_index = (i * 256 // ledPix.nPix) + j
                         
-                        ledPix.pixels[i] = ledPix.wheel(pixel_index & 255, 0.5) 
+                        ledPix.pixels[i] = ledPix.wheel(pixel_index & 255, 0.5)
+                        
+                    houseSwitchCheck()
+                    doorSwitchCheck()
+                    doorButtonCheck()
+                        
                     if l_lightsON:
                         ledPix.pixels.show()
-                        
-                    # check for input
                     server.poll()
-                    if doorSwitch.state != 1:
+                    if ledMode == "rainbow":
+                        time.sleep(0.01)
+                        # check brightness dial
+                        ledPix.brighness = brightKnob.getPercent()/100
+                        
+                    else:
                         break
                     
-                    if doorButton.switchCheck():
-                        ledMode = "red"
+                    #if doorSwitch.change():
+                    #    changeMode("red")
 
-            
             elif ledMode == "red":
                 ledPix.lightAll((255,0,0))
 
-                if doorButton.switchCheck():
-                        ledMode = "solid"
                         
             elif ledMode == "solid":
                 # solid color
                 server.poll()
                 ledPix.lightAll(modeColors['solidColor'])
-                
-                if doorButton.switchCheck():
-                        ledMode = "rainbow"
 
-#             elif ledMode == "white":
-#                 ledPix.lightAll((255,255,255))
-# 
-#                 if doorButton.switchCheck():
-#                         ledMode = "rainbow"
+
+            elif ledMode == "white":
+                ledPix.lightAll(modeColors['white'])
+                        
             
-            else:
+            elif ledMode == "off":
                 ledPix.off()
-        else:
-            ledPix.off()
-
+                        
+                        
+            else:
+                changeMode("off")
         # Process any waiting requests
         server.poll()
     except OSError as error:
@@ -235,6 +297,7 @@ while True:
         continue
 
         
+
 
 
 

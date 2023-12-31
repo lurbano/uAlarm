@@ -158,7 +158,8 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
                             "next", 
                             "previous", 
                             "volume-up", 
-                            "volume-down"]
+                            "volume-down"
+                            ]
 
         if data['action'] == "Rhythmbox":
             if data['value'] in rhythmboxOptions:
@@ -226,6 +227,12 @@ class uHTTPRequestHandler(BaseHTTPRequestHandler):
                 vol += 5
             elif data['value'] == "-":
                 vol -= 5
+            audioCtrl.setVolume(vol)
+            rData['item'] = "Volume"
+            rData['status'] = vol
+
+        if data['action'] == 'setVolume':
+            vol = data['value']
             audioCtrl.setVolume(vol)
             rData['item'] = "Volume"
             rData['status'] = vol
